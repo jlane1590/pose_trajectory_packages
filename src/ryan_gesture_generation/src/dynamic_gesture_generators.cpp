@@ -216,9 +216,7 @@ namespace ryan_gesture_generation {
   pose_trajectory_controller::PoseTrajectory createSurpriseTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
-    pose_trajectory_controller::PoseTrajectory trajectory;
 
-    return trajectory;
   }
 
   pose_trajectory_controller::PoseTrajectory createCircleTrajectory(
