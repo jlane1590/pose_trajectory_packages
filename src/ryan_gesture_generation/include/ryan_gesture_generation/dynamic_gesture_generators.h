@@ -21,6 +21,9 @@ namespace ryan_gesture_generation {
   pose_trajectory_controller::PoseTrajectory createTiltTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
+  pose_trajectory_controller::PoseTrajectory createSurpriseTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
 }
 
 #endif // RYAN_GESTURE_GENERATION_DYNAMIC_GESTURE_GENERATORS_H

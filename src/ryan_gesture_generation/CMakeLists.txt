@@ -123,6 +123,7 @@ include_directories(
  add_library(${PROJECT_NAME}
    src/dynamic_gesture_generators.cpp
    include/ryan_gesture_generation/dynamic_gesture_generators.h
+   include/ryan_gesture_generation/pos_vel_acc_state.h
  )
 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
