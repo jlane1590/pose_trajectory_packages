@@ -1,0 +1,5 @@
+#exclude everything except src directory
+/*
+!.gitignore
+!/*.workspace
+!/src/

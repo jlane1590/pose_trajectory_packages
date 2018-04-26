@@ -1,0 +1,9 @@
+pose_trajectory_controller/PoseTrajectory traj1
+pose_trajectory_controller/PoseTrajectory traj2
+---
+pose_trajectory_controller/PoseTrajectory mergedTraj
+
+int32 error_code
+int32 SUCCESSFUL = 0
+int32 EMPTY_TRAJECTORIES = -1
+int32 INVALID_TRAJECTORIES = -2

@@ -1,0 +1,41 @@
+<package format="2">
+  <name>pose_trajectory_controller</name>
+  <description> Controller for executing cartesian-space trajectories on a group of joints. </description>
+  <version>0.0.0</version>
+
+  <maintainer email="jlane1590@gmail.com">josh lane</maintainer>
+
+  <license>BSD</license>
+
+  <author>josh lane</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>rsptilt_kinematics_plugin</build_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>angles</depend>
+  <depend>control_msgs</depend>
+  <depend>control_toolbox</depend>
+  <depend>controller_interface</depend>
+  <depend>hardware_interface</depend>
+  <depend>realtime_tools</depend>
+  <depend>roscpp</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>urdf</depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>controller_manager</test_depend>
+  <test_depend>xacro</test_depend>
+
+  <export>
+    <controller_interface plugin="${prefix}/pose_trajectory_controller_plugins.xml"/>
+  </export>
+</package>
