@@ -9,10 +9,13 @@ int main(int argc, char **argv)
 
   //ROS_INFO("Hello world!");
   pose_trajectory_controller::PoseTrajectory trajectory;
-  trajectory = ryan_gesture_generation::createNodTrajectory(2.0,1.0,0.1,0.0,true);
+  //trajectory = ryan_gesture_generation::createNodTrajectory(2.0,1.0,0.1,0.0,true);
+  //trajectory = ryan_gesture_generation::createExaggeratedNodTrajectory(1.0,1.0,0.1,0.0,true);
   //trajectory = ryan_gesture_generation::createTiltTrajectory(3.0,1.0,0.0,0.0,false);
   //trajectory = ryan_gesture_generation::createSurpriseTrajectory(2.0,1.0,0.0,0.0,false);
   //trajectory = ryan_gesture_generation::createHoldSurpriseTrajectory(2.0,1.0,0.0,0.0,false);
+  //trajectory = ryan_gesture_generation::createShakeTrajectory(1.0,1.0,0.1,0.0,false);
+  trajectory = ryan_gesture_generation::createCircleTrajectory(1.0,1.0,1.0,0.0,true);
   std::cout << "Trajectory:\n" << trajectory << std::endl;
 
 }

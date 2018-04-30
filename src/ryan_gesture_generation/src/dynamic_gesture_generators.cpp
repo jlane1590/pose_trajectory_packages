@@ -102,8 +102,9 @@ namespace ryan_gesture_generation {
     /* if intensity > 0, there are gesture points so populate them */
     if(gesture_points > 0)
     {
-      /* correct period to evenly space out the gesture */
+      /* correct period and intensity to evenly space out the gesture */
       period = (2*duration)/gesture_points;
+      intensity = (period*rate)/base_period;
 
       double step_time = 0.0;
       /* set all intermediate points of the nod gesture */
@@ -115,6 +116,109 @@ namespace ryan_gesture_generation {
           trajectory.points[i].time_from_start = ros::Duration(step_time += (period/2));
 
         trajectory.points[i].positions[4] = pow(-1, (i+invert))*intensity*nod_state.position[4];
+      }
+    }
+    trajectory.axis_names = axis_names;
+    trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
+
+    return trajectory;
+  }
+
+  pose_trajectory_controller::PoseTrajectory createExaggeratedNodTrajectory(
+      double duration, double intensity, double rate, double start_delay, bool invert)
+  {
+    pose_trajectory_controller::PoseTrajectory trajectory;
+    ros::NodeHandle nh("~");
+    std::vector<std::string> ps_axis_names;
+
+    /* get axis names from the parameter server and check that they match the intended axes */
+    nh.getParam("/neck_controller/axes", ps_axis_names);
+
+    /* expected axes for Ryan head gesture generation */
+    std::vector<std::string> axis_names;
+    axis_names.push_back("posX");
+    axis_names.push_back("posY");
+    axis_names.push_back("posZ");
+    axis_names.push_back("roll");
+    axis_names.push_back("pitch");
+    axis_names.push_back("yaw");
+/*
+    if (ps_axis_names != axis_names)
+    {
+      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
+      return trajectory;
+    }
+*/
+    ryan_gesture_generation::PosVelAccState<double> nod_state(6);
+    nod_state.position[0] = 0.00635;
+    nod_state.position[1] = 0.0;
+    nod_state.position[2] = -0.00635;
+    nod_state.position[3] = 0.0;
+    nod_state.position[4] = 0.349;
+    nod_state.position[5] = 0.0;
+
+    /* the amount of time needed to complete one loop/cycle at max speed, found experimentally */
+    double base_period = 0.5;
+
+    /* check input parameters to make sure they are valid */
+    //change to ros assert for duration?
+    if(duration < 0)
+    {
+      duration = 0;
+      ROS_INFO("Requested nod gesture duration is < 0, setting duration to 0.");
+    }
+    /* time to delay the start of the trajectory from ros::Time::now() */
+    start_delay = std::max(start_delay, 0.0);
+    /* scale the displacement of the gesture 0-100% */
+    intensity = clamp(intensity, 0.0, 1.0);
+    /* scale the movement speed to the tilt state 0-100% */
+    rate = clamp(rate, 0.0, 1.0);
+
+    /* calculate desired period of this gesture */
+    double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
+
+    /* limit period to < duration so that we can complete at least one nod */
+    if(period > (duration))
+    {
+      period = duration;
+      intensity = (period*rate)/base_period;
+    }
+
+    /* the number of trajectory points in the gesture relates to the number of nods.
+     * if period is 0, intensity is also 0, so there is no actual movement and 0 nods */
+    int total_nods = (period==0.0) ? 0 : round(duration/period);
+    int gesture_points = (total_nods == 0) ? 0 : (2*total_nods - 1);
+    /* resize the trajectory elements and set start and end values */
+    trajectory.points.resize(gesture_points+2);
+    for (std::size_t i=0; i<(gesture_points+2); ++i)
+    {
+      trajectory.points[i].positions.resize(axis_names.size());
+      trajectory.points[i].velocities.resize(axis_names.size());
+    }
+    trajectory.points.back().time_from_start = ros::Duration(duration);
+
+    /* if intensity > 0, there are gesture points so populate them */
+    if(gesture_points > 0)
+    {
+      /* correct period to evenly space out the gesture */
+      period = (duration)/total_nods;
+      intensity = (period*rate)/base_period;
+
+      double step_time = 0.0;
+      /* set all intermediate points of the nod gesture */
+      for(std::size_t i=1; i<=gesture_points; ++i)
+      {
+        /* increment time_from_start */
+        trajectory.points[i].time_from_start = ros::Duration(step_time += (period/2));
+        /* for odd numbered gesture points, go to the nod state. For others stay at neutral */
+        if(i%2 == 1)
+        {
+          for(std::size_t j=0; j<6; ++j)
+          {
+            trajectory.points[i].positions[j] = pow(-1, invert)*intensity*nod_state.position[j];
+          }
+        }
+        //trajectory.points[i].positions[4] = pow(-1, (i+invert))*intensity*nod_state.position[4];
       }
     }
     trajectory.axis_names = axis_names;
@@ -394,22 +498,233 @@ namespace ryan_gesture_generation {
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createCircleTrajectory(
-      double duration, double intensity, double rate, double start_delay, bool invert)
-  {
-
-  }
-
   pose_trajectory_controller::PoseTrajectory createShakeTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
+    pose_trajectory_controller::PoseTrajectory trajectory;
+    ros::NodeHandle nh("~");
+    std::vector<std::string> ps_axis_names;
 
+    /* get axis names from the parameter server and check that they match the intended axes */
+    nh.getParam("/neck_controller/axes", ps_axis_names);
+
+    /* expected axes for Ryan head gesture generation */
+    std::vector<std::string> axis_names;
+    axis_names.push_back("posX");
+    axis_names.push_back("posY");
+    axis_names.push_back("posZ");
+    axis_names.push_back("roll");
+    axis_names.push_back("pitch");
+    axis_names.push_back("yaw");
+/*
+    if (ps_axis_names != axis_names)
+    {
+      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
+      return trajectory;
+    }
+*/
+    ryan_gesture_generation::PosVelAccState<double> shake_state(6);
+    shake_state.position[0] = 0.0;
+    shake_state.position[1] = 0.0;
+    shake_state.position[2] = 0.0;
+    shake_state.position[3] = 0.0;
+    shake_state.position[4] = 0.0;
+    shake_state.position[5] = 0.785;
+
+    /* the amount of time needed to complete one loop/cycle at max speed, found experimentally */
+    double base_period = 0.5;
+
+    /* check input parameters to make sure they are valid */
+    //change to ros assert for duration?
+    if(duration < 0)
+    {
+      duration = 0;
+      ROS_INFO("Requested nod gesture duration is < 0, setting duration to 0.");
+    }
+    /* time to delay the start of the trajectory from ros::Time::now() */
+    start_delay = std::max(start_delay, 0.0);
+    /* scale the displacement of the gesture 0-100% */
+    intensity = clamp(intensity, 0.0, 1.0);
+    /* scale the movement speed to the tilt state 0-100% */
+    rate = clamp(rate, 0.0, 1.0);
+
+    /* calculate desired period of this gesture */
+    double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
+
+    /* limit period to <= duration so that we can complete at least one head shake */
+    if(period > (duration))
+    {
+      period = duration;
+      intensity = (period*rate)/base_period;
+    }
+
+    /* the number of trajectory points in the gesture relates to the number of head shakes.
+     * if period is 0, intensity is also 0, so there is no actual movement and we just set gesture points to 0 */
+    int total_nods = (period==0.0) ? 0 : round(duration/period);
+    int gesture_points = 2*total_nods;
+
+    /* resize the trajectory elements and set start and end values */
+    trajectory.points.resize(gesture_points+2);
+    for (std::size_t i=0; i<(gesture_points+2); ++i)
+    {
+      trajectory.points[i].positions.resize(axis_names.size());
+      trajectory.points[i].velocities.resize(axis_names.size());
+    }
+    trajectory.points.back().time_from_start = ros::Duration(duration);
+
+    /* if intensity > 0, there are gesture points so populate them */
+    if(gesture_points > 0)
+    {
+      /* correct period to evenly space out the gesture */
+      period = duration/total_nods;
+      intensity = (period*rate)/base_period;
+
+      double step_time = 0.0;
+      /* set all intermediate points of the shake gesture */
+      for(std::size_t i=1; i<=gesture_points; ++i)
+      {
+        /* increment time_from_start */
+        if(i==1)
+          trajectory.points[i].time_from_start = ros::Duration(step_time += (period/4));
+        else
+          trajectory.points[i].time_from_start = ros::Duration(step_time += (period/2));
+
+        trajectory.points[i].positions[5] = pow(-1, (i+invert))*intensity*shake_state.position[5];
+      }
+    }
+    trajectory.axis_names = axis_names;
+    trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
+
+    return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createExaggeratedNodTrajectory(
+  pose_trajectory_controller::PoseTrajectory createCircleTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
+    pose_trajectory_controller::PoseTrajectory trajectory;
+    ros::NodeHandle nh("~");
+    std::vector<std::string> ps_axis_names;
 
+    /* get axis names from the parameter server and check that they match the intended axes */
+    nh.getParam("/neck_controller/axes", ps_axis_names);
+
+    /* expected axes for Ryan head gesture generation */
+    std::vector<std::string> axis_names;
+    axis_names.push_back("posX");
+    axis_names.push_back("posY");
+    axis_names.push_back("posZ");
+    axis_names.push_back("roll");
+    axis_names.push_back("pitch");
+    axis_names.push_back("yaw");
+/*
+    if (ps_axis_names != axis_names)
+    {
+      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
+      return trajectory;
+    }
+*/
+    std::vector< ryan_gesture_generation::PosVelAccState<double> > circle_states;
+    ryan_gesture_generation::PosVelAccState<double> circle_state(6);
+    /* Only need to specify the axes that are in use for the gesture, the rest default to zero */
+    circle_state.position[0] = 0.0127;
+    circle_state.position[1] = 0.0;
+    circle_state.velocity[0] = 0.0;
+    circle_state.velocity[1] = -0.04;
+    circle_states.push_back(circle_state);
+    circle_state.position[0] = 0.0;
+    circle_state.position[1] = -0.0127;
+    circle_state.velocity[0] = -0.04;
+    circle_state.velocity[1] = 0.0;
+    circle_states.push_back(circle_state);
+    circle_state.position[0] = -0.0127;
+    circle_state.position[1] = 0.0;
+    circle_state.velocity[0] = 0.0;
+    circle_state.velocity[1] = 0.04;
+    circle_states.push_back(circle_state);
+    circle_state.position[0] = 0.0;
+    circle_state.position[1] = 0.0127;
+    circle_state.velocity[0] = 0.04;
+    circle_state.velocity[1] = 0.0;
+    circle_states.push_back(circle_state);
+
+    /* the amount of time needed to complete one loop/cycle at max speed, found experimentally */
+    double base_period = 1.0;
+
+    /* check input parameters to make sure they are valid */
+    //change to ros assert for duration?
+    if(duration < 0)
+    {
+      duration = 0;
+      ROS_INFO("Requested nod gesture duration is < 0, setting duration to 0.");
+    }
+    /* time to delay the start of the trajectory from ros::Time::now() */
+    start_delay = std::max(start_delay, 0.0);
+    /* scale the displacement of the gesture 0-100% */
+    intensity = clamp(intensity, 0.0, 1.0);
+    /* scale the movement speed to the tilt state 0-100% */
+    rate = clamp(rate, 0.0, 1.0);
+
+    /* calculate desired period of this gesture */
+    double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
+
+    /* limit period to <= duration so that we can complete at least one revolution */
+    if(period > (duration))
+    {
+      period = duration;
+      intensity = (period*rate)/base_period;
+    }
+
+    /* the number of trajectory points in the gesture corresponds to the number of revolutions.
+     * if period is 0, intensity is also 0, so there is no actual movement and we just set revolutions to 0 */
+    int revolutions = (period==0.0) ? 0 : round((duration)/period);
+    int gesture_points = 4*revolutions;
+
+    /* resize the trajectory elements and set start and end values */
+    trajectory.points.resize(gesture_points+2);
+    for (std::size_t i=0; i<(gesture_points+2); ++i)
+    {
+      trajectory.points[i].positions.resize(axis_names.size());
+      trajectory.points[i].velocities.resize(axis_names.size());
+    }
+    trajectory.points.back().time_from_start = ros::Duration(duration);
+
+    /* if intensity > 0, there are gesture points so populate them */
+    if(gesture_points > 0)
+    {
+      /* correct period and intensity to evenly space out the gesture */
+      period = (duration)/revolutions;
+      intensity = (period*rate)/base_period;
+
+      double step_time = 0.0;
+      /* set all intermediate points of the circle gesture */
+      for(std::size_t i=1; i<=gesture_points; ++i)
+      {
+        if(i==1)
+          trajectory.points[i].time_from_start = ros::Duration(step_time += (period/8));
+        else
+          trajectory.points[i].time_from_start = ros::Duration(step_time += (period/4));
+        if(!invert)
+        {
+          for(std::size_t j=0; j<6; ++j)
+          {
+            trajectory.points[i].positions[j] = intensity*circle_states[(i-1)%4].position[j];
+            trajectory.points[i].velocities[j] = intensity*rate*circle_states[(i-1)%4].velocity[j];
+          }
+        }
+        else
+        {
+          for(std::size_t j=0; j<6; ++j)
+          {
+            trajectory.points[i].positions[j] = intensity*circle_states[((i%4)+pow(-1,i))].position[j];
+            trajectory.points[i].velocities[j] = -intensity*rate*circle_states[((i%4)+pow(-1,i))].velocity[j];
+          }
+        }
+      }
+    }
+    trajectory.axis_names = axis_names;
+    trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
+
+    return trajectory;
   }
 
 }
