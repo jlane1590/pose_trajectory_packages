@@ -18,10 +18,22 @@ namespace ryan_gesture_generation {
   pose_trajectory_controller::PoseTrajectory createNodTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
+  pose_trajectory_controller::PoseTrajectory createExaggeratedNodTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
   pose_trajectory_controller::PoseTrajectory createTiltTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
   pose_trajectory_controller::PoseTrajectory createSurpriseTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
+  pose_trajectory_controller::PoseTrajectory createHoldSurpriseTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
+  pose_trajectory_controller::PoseTrajectory createCircleTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
+  pose_trajectory_controller::PoseTrajectory createShakeTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
 }
