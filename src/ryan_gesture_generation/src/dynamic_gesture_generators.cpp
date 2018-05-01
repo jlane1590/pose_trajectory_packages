@@ -2,9 +2,12 @@
 //#include <ros/ros.h>
 //#include <pose_trajectory_controller/PoseTrajectory.h>
 //#include <pose_trajectory_controller/init_pose_trajectory.h>
-#include <ryan_gesture_generation/pos_vel_acc_state.h>
 
-namespace ryan_gesture_generation {
+namespace ryan_gesture_generation
+{
+
+namespace internal
+{
 
   double roundToBase(double input, double base=1.0, double precision=0.00000000001)
   {
@@ -26,31 +29,37 @@ namespace ryan_gesture_generation {
     return std::max(lower, std::min(n, upper));
   }
 
-  pose_trajectory_controller::PoseTrajectory createNodTrajectory(
-      double duration, double intensity, double rate, double start_delay, bool invert)
+} //namespace internal
+
+  RyanGestureGenerator::RyanGestureGenerator(ros::NodeHandle& nodeHandle)
+    : nh_(nodeHandle)
   {
-    pose_trajectory_controller::PoseTrajectory trajectory;
-    ros::NodeHandle nh("~");
+    /* expected axes for Ryan head gesture generation */
+    axis_names_.push_back("posX");
+    axis_names_.push_back("posY");
+    axis_names_.push_back("posZ");
+    axis_names_.push_back("roll");
+    axis_names_.push_back("pitch");
+    axis_names_.push_back("yaw");
+
     std::vector<std::string> ps_axis_names;
 
     /* get axis names from the parameter server and check that they match the intended axes */
-    nh.getParam("/neck_controller/axes", ps_axis_names);
+    nh_.getParam("/neck_controller/axes", ps_axis_names);
 
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
-/*
-    if (ps_axis_names != axis_names)
-    {
-      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
-      return trajectory;
-    }
-*/
+    ROS_ASSERT_MSG(ps_axis_names == axis_names_,
+                   "Axes on parameter server don't match the expected axes for Ryan head gesture generation. ABORTING...");
+  }
+
+  RyanGestureGenerator::~RyanGestureGenerator()
+  {
+  }
+
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createNodTrajectory(
+      double duration, double intensity, double rate, double start_delay, bool invert)
+  {
+    pose_trajectory_controller::PoseTrajectory trajectory;
+
     ryan_gesture_generation::PosVelAccState<double> nod_state(6);
     nod_state.position[0] = 0.0;
     nod_state.position[1] = 0.0;
@@ -72,9 +81,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the tilt state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* calculate desired period of this gesture */
     double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
@@ -94,8 +103,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -118,37 +127,17 @@ namespace ryan_gesture_generation {
         trajectory.points[i].positions[4] = pow(-1, (i+invert))*intensity*nod_state.position[4];
       }
     }
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createExaggeratedNodTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createExaggeratedNodTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    ros::NodeHandle nh("~");
-    std::vector<std::string> ps_axis_names;
 
-    /* get axis names from the parameter server and check that they match the intended axes */
-    nh.getParam("/neck_controller/axes", ps_axis_names);
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
-/*
-    if (ps_axis_names != axis_names)
-    {
-      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
-      return trajectory;
-    }
-*/
     ryan_gesture_generation::PosVelAccState<double> nod_state(6);
     nod_state.position[0] = 0.00635;
     nod_state.position[1] = 0.0;
@@ -170,9 +159,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the tilt state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* calculate desired period of this gesture */
     double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
@@ -192,8 +181,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -221,37 +210,17 @@ namespace ryan_gesture_generation {
         //trajectory.points[i].positions[4] = pow(-1, (i+invert))*intensity*nod_state.position[4];
       }
     }
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createTiltTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createTiltTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    ros::NodeHandle nh("~");
-    std::vector<std::string> ps_axis_names;
 
-    /* get axis names from the parameter server and check that they match the intended axes */
-    nh.getParam("/neck_controller/axes", ps_axis_names);
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
-/*
-    if (ps_axis_names != axis_names)
-    {
-      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
-      return trajectory;
-    }
-*/
     ryan_gesture_generation::PosVelAccState<double> tilt_state(6);
     tilt_state.position[0] = 0.0;
     tilt_state.position[1] = -0.0127;
@@ -273,9 +242,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the tilt state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* time required to get to the scaled state at the scaled speed */
     double time_to_state = (rate==0) ? 0.0 : (intensity/rate)*base_time;
@@ -303,8 +272,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -321,26 +290,16 @@ namespace ryan_gesture_generation {
       }
     }
 
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createSurpriseTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createSurpriseTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    //ros::NodeHandle nh("~");
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
 
     ryan_gesture_generation::PosVelAccState<double> surprise_state(6);
     surprise_state.position[0] = -0.0127;
@@ -363,9 +322,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the surprise state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* time required to get to the scaled state at the scaled speed */
     double time_to_state = (rate==0) ? 0.0 : (intensity/rate)*base_time;
@@ -385,8 +344,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -400,26 +359,16 @@ namespace ryan_gesture_generation {
       trajectory.points[1].time_from_start = ros::Duration(time_to_state);
     }
 
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createHoldSurpriseTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createHoldSurpriseTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    //ros::NodeHandle nh("~");
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
 
     ryan_gesture_generation::PosVelAccState<double> surprise_state(6);
     surprise_state.position[0] = -0.0127;
@@ -442,9 +391,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the surprise state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* time required to get to the scaled state at the scaled speed */
     double time_to_state = (rate==0) ? 0.0 : (intensity/rate)*base_time;
@@ -473,8 +422,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -492,37 +441,17 @@ namespace ryan_gesture_generation {
       }
     }
 
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createShakeTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createShakeTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    ros::NodeHandle nh("~");
-    std::vector<std::string> ps_axis_names;
 
-    /* get axis names from the parameter server and check that they match the intended axes */
-    nh.getParam("/neck_controller/axes", ps_axis_names);
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
-/*
-    if (ps_axis_names != axis_names)
-    {
-      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
-      return trajectory;
-    }
-*/
     ryan_gesture_generation::PosVelAccState<double> shake_state(6);
     shake_state.position[0] = 0.0;
     shake_state.position[1] = 0.0;
@@ -544,9 +473,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the tilt state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* calculate desired period of this gesture */
     double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
@@ -567,8 +496,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -592,37 +521,17 @@ namespace ryan_gesture_generation {
         trajectory.points[i].positions[5] = pow(-1, (i+invert))*intensity*shake_state.position[5];
       }
     }
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-  pose_trajectory_controller::PoseTrajectory createCircleTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createCircleTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
-    ros::NodeHandle nh("~");
-    std::vector<std::string> ps_axis_names;
 
-    /* get axis names from the parameter server and check that they match the intended axes */
-    nh.getParam("/neck_controller/axes", ps_axis_names);
-
-    /* expected axes for Ryan head gesture generation */
-    std::vector<std::string> axis_names;
-    axis_names.push_back("posX");
-    axis_names.push_back("posY");
-    axis_names.push_back("posZ");
-    axis_names.push_back("roll");
-    axis_names.push_back("pitch");
-    axis_names.push_back("yaw");
-/*
-    if (ps_axis_names != axis_names)
-    {
-      ROS_ERROR("Axes on parameter server don't match the expected axes for Ryan head gesture generation.");
-      return trajectory;
-    }
-*/
     std::vector< ryan_gesture_generation::PosVelAccState<double> > circle_states;
     ryan_gesture_generation::PosVelAccState<double> circle_state(6);
     /* Only need to specify the axes that are in use for the gesture, the rest default to zero */
@@ -660,9 +569,9 @@ namespace ryan_gesture_generation {
     /* time to delay the start of the trajectory from ros::Time::now() */
     start_delay = std::max(start_delay, 0.0);
     /* scale the displacement of the gesture 0-100% */
-    intensity = clamp(intensity, 0.0, 1.0);
+    intensity = internal::clamp(intensity, 0.0, 1.0);
     /* scale the movement speed to the tilt state 0-100% */
-    rate = clamp(rate, 0.0, 1.0);
+    rate = internal::clamp(rate, 0.0, 1.0);
 
     /* calculate desired period of this gesture */
     double period = (rate==0) ? 0.0 : (intensity*base_period)/rate;
@@ -683,8 +592,8 @@ namespace ryan_gesture_generation {
     trajectory.points.resize(gesture_points+2);
     for (std::size_t i=0; i<(gesture_points+2); ++i)
     {
-      trajectory.points[i].positions.resize(axis_names.size());
-      trajectory.points[i].velocities.resize(axis_names.size());
+      trajectory.points[i].positions.resize(axis_names_.size());
+      trajectory.points[i].velocities.resize(axis_names_.size());
     }
     trajectory.points.back().time_from_start = ros::Duration(duration);
 
@@ -721,10 +630,10 @@ namespace ryan_gesture_generation {
         }
       }
     }
-    trajectory.axis_names = axis_names;
+    trajectory.axis_names = axis_names_;
     trajectory.header.stamp = ros::Time::now() + ros::Duration(start_delay);
 
     return trajectory;
   }
 
-}
+} //namespace ryan_gesture_generation

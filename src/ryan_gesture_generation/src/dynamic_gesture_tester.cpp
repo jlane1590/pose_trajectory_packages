@@ -7,15 +7,15 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "dynamic_gesture_tester");
   ros::NodeHandle nh;
 
-  //ROS_INFO("Hello world!");
+  ryan_gesture_generation::RyanGestureGenerator ryanGestureGenerator(nh);
   pose_trajectory_controller::PoseTrajectory trajectory;
-  //trajectory = ryan_gesture_generation::createNodTrajectory(2.0,1.0,0.1,0.0,true);
-  //trajectory = ryan_gesture_generation::createExaggeratedNodTrajectory(1.0,1.0,0.1,0.0,true);
-  //trajectory = ryan_gesture_generation::createTiltTrajectory(3.0,1.0,0.0,0.0,false);
-  //trajectory = ryan_gesture_generation::createSurpriseTrajectory(2.0,1.0,0.0,0.0,false);
-  //trajectory = ryan_gesture_generation::createHoldSurpriseTrajectory(2.0,1.0,0.0,0.0,false);
-  //trajectory = ryan_gesture_generation::createShakeTrajectory(1.0,1.0,0.1,0.0,false);
-  trajectory = ryan_gesture_generation::createCircleTrajectory(1.0,1.0,1.0,0.0,true);
+  //trajectory = ryanGestureGenerator.createNodTrajectory(2.0,1.0,0.1,0.0,true);
+  //trajectory = ryanGestureGenerator.createExaggeratedNodTrajectory(1.0,1.0,0.1,0.0,true);
+  //trajectory = ryanGestureGenerator.createTiltTrajectory(3.0,1.0,0.0,0.0,false);
+  trajectory = ryanGestureGenerator.createSurpriseTrajectory(2.0,1.0,1.0,0.0,false);
+  //trajectory = ryanGestureGenerator.createHoldSurpriseTrajectory(2.0,1.0,0.0,0.0,false);
+  //trajectory = ryanGestureGenerator.createShakeTrajectory(1.0,1.0,0.1,0.0,false);
+  //trajectory = ryanGestureGenerator.createCircleTrajectory(1.0,1.0,1.0,0.0,true);
   std::cout << "Trajectory:\n" << trajectory << std::endl;
 
 }
