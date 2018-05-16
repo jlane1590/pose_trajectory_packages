@@ -18,6 +18,9 @@ public:
   pose_trajectory_controller::PoseTrajectory createNodTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
+  pose_trajectory_controller::PoseTrajectory createHeadbangTrajectory(
+      double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
+
   pose_trajectory_controller::PoseTrajectory createExaggeratedNodTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
