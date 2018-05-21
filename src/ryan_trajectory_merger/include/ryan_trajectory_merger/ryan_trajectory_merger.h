@@ -25,6 +25,13 @@ void getFixedYPR(tf2::Matrix3x3& rot, double& yaw, double& pitch, double& roll)
   yaw = -tf2Atan2(rot.getRow(0).getY(),rot.getRow(0).getX());
 }
 
+void rotateV3(tf2::Matrix3x3& rot, tf2::Vector3& in, tf2::Vector3& out)
+{
+  out.setX(rot[0].dot(in));
+  out.setY(rot[1].dot(in));
+  out.setZ(rot[2].dot(in));
+}
+
 } //namespace internal
 
 /**
@@ -147,7 +154,7 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
       result_way_times.push_back((posture.header.stamp - resultTrajectory.header.stamp) + pt1_it->time_from_start);
     }
   }
-/*
+
   std::stringstream sstr;
   sstr << "Merged Trajectory Way Point time_from_starts: ";
   for(int i = 0; i < result_way_times.size(); ++i)
@@ -159,7 +166,7 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
   ROS_INFO_STREAM(sstr.str());
 
   //ROS_INFO("wall time = %f \n traj start time = %f \n", ros::Time::now().toSec(), resultTrajectory.header.stamp.toSec());
-*/
+
   /* always use the posture axis order in the merged trajectory */
   resultTrajectory.axis_names = axis_names;
   resultTrajectory.points.resize(result_way_times.size());
@@ -249,16 +256,16 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
     int result_pt_index = std::distance(result_way_times.begin(), time_it);
 
     /* resize the arrays of the result trajectory point if necessary, no-op if already the right size */
-    if (!traj_point_it->positions.empty()) {resultTrajectory.points[result_pt_index].positions.resize(axis_names.size());}
-    if (!traj_point_it->velocities.empty()) {resultTrajectory.points[result_pt_index].velocities.resize(axis_names.size());}
-    if (!traj_point_it->accelerations.empty()) {resultTrajectory.points[result_pt_index].accelerations.resize(axis_names.size());}
+    if (!posture.points.begin()->positions.empty()) {resultTrajectory.points[result_pt_index].positions.resize(axis_names.size());}
+    if (!posture.points.begin()->velocities.empty()) {resultTrajectory.points[result_pt_index].velocities.resize(axis_names.size());}
+    if (!posture.points.begin()->accelerations.empty()) {resultTrajectory.points[result_pt_index].accelerations.resize(axis_names.size());}
 
     /* move the posture state data to the result trajectory */
     for (unsigned int i = 0; i < axis_names.size(); ++i)
     {
-      if (!traj_point_it->positions.empty())     {resultTrajectory.points[result_pt_index].positions[i] = way_point_state.position[i];}
-      if (!traj_point_it->velocities.empty())    {resultTrajectory.points[result_pt_index].velocities[i] = way_point_state.velocity[i];}
-      if (!traj_point_it->accelerations.empty()) {resultTrajectory.points[result_pt_index].accelerations[i] = way_point_state.acceleration[i];}
+      if (!posture.points.begin()->positions.empty())     {resultTrajectory.points[result_pt_index].positions[i] = way_point_state.position[i];}
+      if (!posture.points.begin()->velocities.empty())    {resultTrajectory.points[result_pt_index].velocities[i] = way_point_state.velocity[i];}
+      if (!posture.points.begin()->accelerations.empty()) {resultTrajectory.points[result_pt_index].accelerations[i] = way_point_state.acceleration[i];}
     }
   }
 
@@ -355,24 +362,24 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
     posture_transform_stamped.transform.rotation.y = posture_quat.y();
     posture_transform_stamped.transform.rotation.z = posture_quat.z();
     posture_transform_stamped.transform.rotation.w = posture_quat.w();
+    tf2::Matrix3x3 posture_rot(posture_quat);
 
-    /* if the gesture point contains position, transform it back to the neck frame */
-    if(!traj_point_it->positions.empty())
+    /* if the gesture contains positions, transform it back to the neck frame */
+    if(!gesture.points.begin()->positions.empty())
     {
       /* resize the position array of the result trajectory point if necessary, no-op if already the right size */
       resultTrajectory.points[result_pt_index].positions.resize(axis_names.size());
-      ROS_INFO("START");
       /* construct the gesture transform for the position */
-      gesture_transform_stamped.transform.translation.x = traj_point_it->positions[0];
-      gesture_transform_stamped.transform.translation.y = traj_point_it->positions[1];
-      gesture_transform_stamped.transform.translation.z = traj_point_it->positions[2];
+      gesture_transform_stamped.transform.translation.x = way_point_state.position[0];
+      gesture_transform_stamped.transform.translation.y = way_point_state.position[1];
+      gesture_transform_stamped.transform.translation.z = way_point_state.position[2];
       tf2::Quaternion gesture_quat;
-      gesture_quat.setRPY(traj_point_it->positions[3], traj_point_it->positions[4], traj_point_it->positions[5]);
+      gesture_quat.setRPY(way_point_state.position[3], way_point_state.position[4], way_point_state.position[5]);
       gesture_transform_stamped.transform.rotation.x = gesture_quat.x();
       gesture_transform_stamped.transform.rotation.y = gesture_quat.y();
       gesture_transform_stamped.transform.rotation.z = gesture_quat.z();
       gesture_transform_stamped.transform.rotation.w = gesture_quat.w();
-      ROS_INFO("END");
+
       /* transform the gesture position to the neck frame */
       tf2::doTransform(gesture_transform_stamped, merged_transform_stamped, posture_transform_stamped);
       /* extract roll, pitch, and yaw from the transformed quaternion */
@@ -391,72 +398,56 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
       resultTrajectory.points[result_pt_index].positions[5] = yaw;
     }
 
-    /* if the gesture point contains velocity, transform it back to the neck frame */
-    if(!traj_point_it->velocities.empty())
+    /* if the gesture point contains velocities, transform it back to the neck frame */
+    if(!gesture.points.begin()->velocities.empty())
     {
       /* resize the velocity array of the result trajectory point if necessary, no-op if already the right size */
       resultTrajectory.points[result_pt_index].velocities.resize(axis_names.size());
-      /* construct the gesture transform for the velocity */
-      gesture_transform_stamped.transform.translation.x = traj_point_it->velocities[0];
-      gesture_transform_stamped.transform.translation.y = traj_point_it->velocities[1];
-      gesture_transform_stamped.transform.translation.z = traj_point_it->velocities[2];
-      tf2::Quaternion gesture_quat;
-      gesture_quat.setRPY(traj_point_it->velocities[3], traj_point_it->velocities[4], traj_point_it->velocities[5]);
-      gesture_transform_stamped.transform.rotation.x = gesture_quat.x();
-      gesture_transform_stamped.transform.rotation.y = gesture_quat.y();
-      gesture_transform_stamped.transform.rotation.z = gesture_quat.z();
-      gesture_transform_stamped.transform.rotation.w = gesture_quat.w();
 
-      /* transform the gesture velocity to the neck frame */
-      tf2::doTransform(gesture_transform_stamped, merged_transform_stamped, posture_transform_stamped);
-      /* extract roll, pitch, and yaw from the transformed quaternion */
-      tf2::Quaternion merged_quat(merged_transform_stamped.transform.rotation.x, merged_transform_stamped.transform.rotation.y,
-                         merged_transform_stamped.transform.rotation.z, merged_transform_stamped.transform.rotation.w);
-      tf2::Matrix3x3 merged_rot(merged_quat);
-      double roll, pitch, yaw;
-      internal::getFixedYPR(merged_rot, yaw, pitch, roll);
+      /* rotate the linear and angular velocity of the gesture back to the base frame */
+      tf2::Vector3 gest_linear_vel, rot_linear_vel, gest_angular_vel, rot_angular_vel;
+      gest_linear_vel.setX(way_point_state.velocity[0]);
+      gest_linear_vel.setY(way_point_state.velocity[1]);
+      gest_linear_vel.setZ(way_point_state.velocity[2]);
+      gest_angular_vel.setX(way_point_state.velocity[3]);
+      gest_angular_vel.setY(way_point_state.velocity[4]);
+      gest_angular_vel.setZ(way_point_state.velocity[5]);
+      internal::rotateV3(posture_rot, gest_linear_vel, rot_linear_vel);
+      internal::rotateV3(posture_rot, gest_angular_vel, rot_angular_vel);
 
-      /* combine the merged velocity data with the result trajectory */
-      resultTrajectory.points[result_pt_index].velocities[0] += merged_transform_stamped.transform.translation.x;
-      resultTrajectory.points[result_pt_index].velocities[1] += merged_transform_stamped.transform.translation.y;
-      resultTrajectory.points[result_pt_index].velocities[2] += merged_transform_stamped.transform.translation.z;
-      resultTrajectory.points[result_pt_index].velocities[3] += roll;
-      resultTrajectory.points[result_pt_index].velocities[4] += pitch;
-      resultTrajectory.points[result_pt_index].velocities[5] += yaw;
+      /* combine the rotated velocity data with the result trajectory */
+      resultTrajectory.points[result_pt_index].velocities[0] += rot_linear_vel.x();
+      resultTrajectory.points[result_pt_index].velocities[1] += rot_linear_vel.y();
+      resultTrajectory.points[result_pt_index].velocities[2] += rot_linear_vel.z();
+      resultTrajectory.points[result_pt_index].velocities[3] += rot_angular_vel.x();
+      resultTrajectory.points[result_pt_index].velocities[4] += rot_angular_vel.y();
+      resultTrajectory.points[result_pt_index].velocities[5] += rot_angular_vel.z();
     }
 
-    /* if the gesture point contains acceleration, transform it back to the neck frame */
-    if(!traj_point_it->accelerations.empty())
+    /* if the gesture point contains accelerations, transform it back to the neck frame */
+    if(!gesture.points.begin()->accelerations.empty())
     {
       /* resize the acceleration array of the result trajectory point if necessary, no-op if already the right size */
       resultTrajectory.points[result_pt_index].accelerations.resize(axis_names.size());
-      /* construct the gesture transform for the acceleration */
-      gesture_transform_stamped.transform.translation.x = traj_point_it->accelerations[0];
-      gesture_transform_stamped.transform.translation.y = traj_point_it->accelerations[1];
-      gesture_transform_stamped.transform.translation.z = traj_point_it->accelerations[2];
-      tf2::Quaternion gesture_quat;
-      gesture_quat.setRPY(traj_point_it->accelerations[3], traj_point_it->accelerations[4], traj_point_it->accelerations[5]);
-      gesture_transform_stamped.transform.rotation.x = gesture_quat.x();
-      gesture_transform_stamped.transform.rotation.y = gesture_quat.y();
-      gesture_transform_stamped.transform.rotation.z = gesture_quat.z();
-      gesture_transform_stamped.transform.rotation.w = gesture_quat.w();
 
-      /* transform the gesture acceleration to the neck frame */
-      tf2::doTransform(gesture_transform_stamped, merged_transform_stamped, posture_transform_stamped);
-      /* extract roll, pitch, and yaw from the transformed quaternion */
-      tf2::Quaternion merged_quat(merged_transform_stamped.transform.rotation.x, merged_transform_stamped.transform.rotation.y,
-                         merged_transform_stamped.transform.rotation.z, merged_transform_stamped.transform.rotation.w);
-      tf2::Matrix3x3 merged_rot(merged_quat);
-      double roll, pitch, yaw;
-      internal::getFixedYPR(merged_rot, yaw, pitch, roll);
+      /* rotate the linear and angular acceleration of the gesture back to the base frame */
+      tf2::Vector3 gest_linear_acc, rot_linear_acc, gest_angular_acc, rot_angular_acc;
+      gest_linear_acc.setX(way_point_state.acceleration[0]);
+      gest_linear_acc.setY(way_point_state.acceleration[1]);
+      gest_linear_acc.setZ(way_point_state.acceleration[2]);
+      gest_angular_acc.setX(way_point_state.acceleration[3]);
+      gest_angular_acc.setY(way_point_state.acceleration[4]);
+      gest_angular_acc.setZ(way_point_state.acceleration[5]);
+      internal::rotateV3(posture_rot, gest_linear_acc, rot_linear_acc);
+      internal::rotateV3(posture_rot, gest_angular_acc, rot_angular_acc);
 
-      /* move the merged acceleration data to the result trajectory */
-      resultTrajectory.points[result_pt_index].accelerations[0] += merged_transform_stamped.transform.translation.x;
-      resultTrajectory.points[result_pt_index].accelerations[1] += merged_transform_stamped.transform.translation.y;
-      resultTrajectory.points[result_pt_index].accelerations[2] += merged_transform_stamped.transform.translation.z;
-      resultTrajectory.points[result_pt_index].accelerations[3] += roll;
-      resultTrajectory.points[result_pt_index].accelerations[4] += pitch;
-      resultTrajectory.points[result_pt_index].accelerations[5] += yaw;
+      /* combine the rotated acceleration data with the result trajectory */
+      resultTrajectory.points[result_pt_index].accelerations[0] += rot_linear_acc.x();
+      resultTrajectory.points[result_pt_index].accelerations[1] += rot_linear_acc.y();
+      resultTrajectory.points[result_pt_index].accelerations[2] += rot_linear_acc.z();
+      resultTrajectory.points[result_pt_index].accelerations[3] += rot_angular_acc.x();
+      resultTrajectory.points[result_pt_index].accelerations[4] += rot_angular_acc.y();
+      resultTrajectory.points[result_pt_index].accelerations[5] += rot_angular_acc.z();
     }
 
   }

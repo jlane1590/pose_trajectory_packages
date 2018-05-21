@@ -491,6 +491,33 @@ namespace internal
     return trajectory;
   }
 
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createMoveTrajectory(
+      pose_trajectory_controller::PoseTrajectoryPoint& start_pt, pose_trajectory_controller::PoseTrajectoryPoint& end_pt)
+  {
+    pose_trajectory_controller::PoseTrajectory trajectory;
+
+    //Check if the sizes of the points are consistent
+    if(!isValid(start_pt, axis_names_.size()) || !isValid(end_pt, axis_names_.size()))
+    {
+      return trajectory;
+    }
+
+    trajectory.points.resize(2);
+
+    if(start_pt.time_from_start <= end_pt.time_from_start)
+    {
+      trajectory.points[0] = start_pt;
+      trajectory.points[1] = end_pt;
+    }
+    else
+    {
+      trajectory.points[0] = end_pt;
+      trajectory.points[1] = start_pt;
+    }
+
+    return trajectory;
+  }
+
   pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createSurpriseTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {
