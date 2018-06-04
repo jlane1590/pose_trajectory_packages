@@ -1,0 +1,4 @@
+int32 status
+int32 IN_MOTION = 1
+int32 MOVE_COMPLETE = 0
+int32 ERROR_STATE = -1

@@ -1,7 +1,7 @@
 #include <ryan_gesture_generation/dynamic_gesture_generators.h>
 //#include <ros/ros.h>
 //#include <pose_trajectory_controller/PoseTrajectory.h>
-//#include <pose_trajectory_controller/init_pose_trajectory.h>
+#include <pose_trajectory_controller/init_pose_trajectory.h>
 #include <tf/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -491,7 +491,7 @@ namespace internal
     return trajectory;
   }
 
- /* pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createMoveTrajectory(
+/*  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createMoveTrajectory(
       pose_trajectory_controller::PoseTrajectoryPoint& start_pt, pose_trajectory_controller::PoseTrajectoryPoint& end_pt)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
