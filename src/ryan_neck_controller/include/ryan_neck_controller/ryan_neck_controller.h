@@ -49,8 +49,10 @@ class RyanNeckController
    * @param response the provided response.
    * @return true if successful, false otherwise.
    */
-  bool updateMotionServiceCB(ryan_neck_controller::UpdateMotion::Request& request,
-                       ryan_neck_controller::UpdateMotion::Response& response);
+ // bool updateMotionServiceCB(ryan_neck_controller::UpdateMotion::Request& request,
+ //                      ryan_neck_controller::UpdateMotion::Response& response);
+
+  void motionCommandCB(const MotionCommand& msg);
 
   /*!
    * \brief Publish current motion status. Called whenever motion_status_ is changed
@@ -63,6 +65,10 @@ class RyanNeckController
    */
   void trajControllerDoneCB(const actionlib::SimpleClientGoalState& state,
               const pose_trajectory_controller::FollowPoseTrajectoryResultConstPtr& result);
+
+  void trajControllerActiveCB();
+
+  pose_trajectory_controller::PoseTrajectory createGestureFromMsg(const GestureCommand& msg);
 
   /**
    * takes in a motionCmd message and updates the active goal trajectory
@@ -78,8 +84,11 @@ class RyanNeckController
   //! ROS action name to connect to.
   std::string action_topic_;
 
+  ros::Subscriber motion_cmd_sub_;
+  std::string motion_cmd_topic_;
+
   //! ROS service server.
-  ros::ServiceServer update_motion_srv_;
+  //ros::ServiceServer update_motion_srv_;
 
   //! Gesture generator object.
   ryan_gesture_generation::RyanGestureGenerator gesture_generator_;
