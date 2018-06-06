@@ -7,9 +7,11 @@
 
 // ROS
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 #include <actionlib/client/simple_action_client.h>
 #include <pose_trajectory_controller/FollowPoseTrajectoryAction.h>
 #include "pose_trajectory_controller/PoseTrajectory.h"
+#include "pose_trajectory_controller/PoseTrajectoryControllerState.h"
 
 // Boost
 #include <boost/shared_ptr.hpp>
@@ -49,10 +51,12 @@ class RyanNeckController
    * @param response the provided response.
    * @return true if successful, false otherwise.
    */
- // bool updateMotionServiceCB(ryan_neck_controller::UpdateMotion::Request& request,
- //                      ryan_neck_controller::UpdateMotion::Response& response);
+  bool updateMotionServiceCB(ryan_neck_controller::UpdateMotion::Request& request,
+                       ryan_neck_controller::UpdateMotion::Response& response);
 
-  void motionCommandCB(const MotionCommand& msg);
+  //void motionCommandCB(const MotionCommand& msg);
+
+  void neckStateCB(const pose_trajectory_controller::PoseTrajectoryControllerState& msg);
 
   /*!
    * \brief Publish current motion status. Called whenever motion_status_ is changed
@@ -84,11 +88,14 @@ class RyanNeckController
   //! ROS action name to connect to.
   std::string action_topic_;
 
-  ros::Subscriber motion_cmd_sub_;
-  std::string motion_cmd_topic_;
+  //ros::Subscriber motion_cmd_sub_;
+  //std::string motion_cmd_topic_;
+
+  ros::Subscriber neck_state_sub_;
+  std::string neck_state_topic_;
 
   //! ROS service server.
-  //ros::ServiceServer update_motion_srv_;
+  ros::ServiceServer update_motion_srv_;
 
   //! Gesture generator object.
   ryan_gesture_generation::RyanGestureGenerator gesture_generator_;
@@ -98,6 +105,8 @@ class RyanNeckController
   ActionClientPtr ac_ptr_;
 
   ryan_neck_controller::MotionStatus status_msg_;
+
+  pose_trajectory_controller::PoseTrajectoryPoint current_state_;
 
   pose_trajectory_controller::PoseTrajectoryPtr current_trajectory_ptr_;
   pose_trajectory_controller::PoseTrajectoryPtr current_gesture_ptr_;

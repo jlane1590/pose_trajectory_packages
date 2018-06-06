@@ -19,10 +19,12 @@ RyanNeckController::RyanNeckController(ros::NodeHandle& nodeHandle)
 
   motion_status_pub_ = nodeHandle_.advertise<ryan_neck_controller::MotionStatus>("motion_status", 1000);
 
-  motion_cmd_sub_ = nodeHandle_.subscribe(motion_cmd_topic_, 1, &RyanNeckController::motionCommandCB, this);
+  //motion_cmd_sub_ = nodeHandle_.subscribe(motion_cmd_topic_, 1, &RyanNeckController::motionCommandCB, this);
 
-  //update_motion_srv_ = nodeHandle_.advertiseService("update_motion",
-  //                                              &RyanNeckController::updateMotionServiceCB, this);
+  neck_state_sub_ = nodeHandle_.subscribe(neck_state_topic_, 1, &RyanNeckController::neckStateCB, this);
+
+  update_motion_srv_ = nodeHandle_.advertiseService("update_motion",
+                                                &RyanNeckController::updateMotionServiceCB, this);
 
   ac_ptr_.reset(new ActionClient(action_topic_, true));
 
@@ -37,6 +39,7 @@ RyanNeckController::RyanNeckController(ros::NodeHandle& nodeHandle)
 
 RyanNeckController::~RyanNeckController()
 {
+  //delete[] current_positions_;
 }
 
 bool RyanNeckController::readParameters()
@@ -45,68 +48,177 @@ bool RyanNeckController::readParameters()
   //check axis_names to ensure they are what we expect -> this is already checked in gesture generator constructor,
   //no need to do it again
 
+  //add neck state subscriber topic
   if(!nodeHandle_.getParam("neck_controller/action_topic", action_topic_) ||
-     !nodeHandle_.getParam("neck_controller/motion_cmd_topic", motion_cmd_topic_))
+     //!nodeHandle_.getParam("neck_controller/motion_cmd_topic", motion_cmd_topic_) ||
+     !nodeHandle_.getParam("neck_controller/neck_state_topic", neck_state_topic_))
     return false;
 
   return true;
 }
-/**
+
 bool RyanNeckController::updateMotionServiceCB(ryan_neck_controller::UpdateMotion::Request& request,
                      ryan_neck_controller::UpdateMotion::Response& response)
 {
+  ROS_INFO("Service request received");
   switch(request.desired_motion.type)
   {
     case MotionCommand::POSTURE:
     {
+    pose_trajectory_controller::PoseTrajectoryPoint goal_pt;
+    goal_pt = request.desired_motion.posture;
       //generate the posture trajectory using dynamic gesture generation
-      pose_trajectory_controller::PoseTrajectory posture;
-      pose_trajectory_controller::PoseTrajectory merged;
+      pose_trajectory_controller::PoseTrajectory posture = gesture_generator_.createMoveTrajectory(
+            current_state_, goal_pt);
+      //check if generated posture is empty
 
       pose_trajectory_controller::FollowPoseTrajectoryGoal goal;
 
       //if we want to run the posture with the current running gesture
       if(request.desired_motion.merge)
       {
+        pose_trajectory_controller::PoseTrajectory merged;
         //merge the new posture with the current running gesture
         if(ryan_trajectory_merger::createMergedTrajectory<trajectory_interface::QuinticSplineSegment<double> >(merged, posture, *current_gesture_ptr_) < 0)
         {
-          response.error_code = UpdateMotion::Response::INVALID_TRAJECTORIES;
-          return false;
+          //publish somewhere an error message
+          response.error_code = UpdateMotion::Response::ERROR;
+          return true;
         }
         goal.trajectory = merged;
 
       }
+      else //we want to run the posture alone
+      {
+        goal.trajectory = posture;
+      }
+      ROS_INFO("Posture request ready to send to action server");
       //Send the goal trajectory to the pose trajectory controller
       ac_ptr_->sendGoal(goal,
                         boost::bind(&RyanNeckController::trajControllerDoneCB, this, _1, _2),
                         ActionClient::SimpleActiveCallback(),
                         ActionClient::SimpleFeedbackCallback());
-
+      ROS_INFO("Posture goal sent");
+      //update the current running posture and trajectory
       pose_trajectory_controller::PoseTrajectory* posturePtr = &posture;
       current_posture_ptr_.reset(posturePtr);
-      //now we merge the two desired trajectories
+      pose_trajectory_controller::PoseTrajectory* trajectoryPtr = &goal.trajectory;
+      current_trajectory_ptr_.reset(trajectoryPtr);
+      //if we didn't merge, then the old gesture was wiped out
+      if(!request.desired_motion.merge)
+        current_gesture_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
+      response.error_code = UpdateMotion::Response::SUCCESSFUL;
+      ROS_INFO("Current pointers updated in posture case");
       break;
     }
     case MotionCommand::GESTURE:
-      break;
-    case MotionCommand::BOTH:
-      break;
-    default:
-      response.error_code = UpdateMotion::Response::INVALID_TRAJECTORIES;
-      return false;
-  }
-}
-**/
+    {
+      //generate the gesture trajectory using dynamic gesture generation
+      pose_trajectory_controller::PoseTrajectory gesture = createGestureFromMsg(request.desired_motion.gesture);
+      //check if generated gesture is empty
 
+      pose_trajectory_controller::FollowPoseTrajectoryGoal goal;
+
+      //if we want to run the gesture with the current running posture
+      if(request.desired_motion.merge)
+      {
+        pose_trajectory_controller::PoseTrajectory merged;
+        //merge the new gesture with the current running posture
+        if(ryan_trajectory_merger::createMergedTrajectory<trajectory_interface::QuinticSplineSegment<double> >(merged, *current_posture_ptr_, gesture) < 0)
+        {
+          //publish somewhere an error message
+          response.error_code = UpdateMotion::Response::ERROR;
+          return true;
+        }
+        goal.trajectory = merged;
+
+      }
+      else //we want to run the gesture alone
+      {
+        goal.trajectory = gesture;
+      }
+      ROS_INFO("Gesture request ready to send to action server");
+      //Send the goal trajectory to the pose trajectory controller
+      ac_ptr_->sendGoal(goal,
+                        boost::bind(&RyanNeckController::trajControllerDoneCB, this, _1, _2),
+                        ActionClient::SimpleActiveCallback(),
+                        ActionClient::SimpleFeedbackCallback());
+      ROS_INFO("Gesture goal sent");
+      //update the current running gesture and trajectory
+      pose_trajectory_controller::PoseTrajectory* gesturePtr = &gesture;
+      current_gesture_ptr_.reset(gesturePtr);
+      pose_trajectory_controller::PoseTrajectory* trajectoryPtr = &goal.trajectory;
+      current_trajectory_ptr_.reset(trajectoryPtr);
+      //if we didn't merge, then the old posture was wiped out
+      if(!request.desired_motion.merge)
+        current_posture_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
+      response.error_code = UpdateMotion::Response::SUCCESSFUL;
+      ROS_INFO("Current pointers updated in gesture case");
+      break;
+    }
+    case MotionCommand::BOTH:
+    {
+      //generate the posture and gesture trajectories using dynamic gesture generation
+      pose_trajectory_controller::PoseTrajectoryPoint goal_pt;
+      goal_pt = request.desired_motion.posture;
+
+      pose_trajectory_controller::PoseTrajectory posture = gesture_generator_.createMoveTrajectory(
+            current_state_, goal_pt);
+
+      pose_trajectory_controller::PoseTrajectory gesture = createGestureFromMsg(request.desired_motion.gesture);
+      //check if generated posture/gesture is empty
+
+      pose_trajectory_controller::FollowPoseTrajectoryGoal goal;
+
+      //merge the two input trajectories
+      pose_trajectory_controller::PoseTrajectory merged;
+      if(ryan_trajectory_merger::createMergedTrajectory<trajectory_interface::QuinticSplineSegment<double> >(merged, posture, gesture) < 0)
+      {
+        //publish somewhere an error message
+        response.error_code = UpdateMotion::Response::ERROR;
+        return true;
+      }
+      goal.trajectory = merged;
+      ROS_INFO("Both request ready to send to action server");
+
+      //Send the goal trajectory to the pose trajectory controller
+      ac_ptr_->sendGoal(goal,
+                        boost::bind(&RyanNeckController::trajControllerDoneCB, this, _1, _2),
+                        ActionClient::SimpleActiveCallback(),
+                        ActionClient::SimpleFeedbackCallback());
+      ROS_INFO("Combined goal sent");
+      //update the current running posture, gesture, and trajectory
+      pose_trajectory_controller::PoseTrajectory* posturePtr = &posture;
+      current_posture_ptr_.reset(posturePtr);
+      pose_trajectory_controller::PoseTrajectory* gesturePtr = &gesture;
+      current_gesture_ptr_.reset(gesturePtr);
+      pose_trajectory_controller::PoseTrajectory* trajectoryPtr = &goal.trajectory;
+      current_trajectory_ptr_.reset(trajectoryPtr);
+      response.error_code = UpdateMotion::Response::SUCCESSFUL;
+      ROS_INFO("Current pointers updated in both case");
+      break;
+    }
+    default:
+      //publish somewhere an error message
+      ROS_INFO("Default found");
+      response.error_code = UpdateMotion::Response::ERROR;
+      break;
+  }
+  return true;
+}
+
+/**
 void RyanNeckController::motionCommandCB(const MotionCommand& msg)
 {
   switch(msg.type)
   {
     case MotionCommand::POSTURE:
     {
+    pose_trajectory_controller::PoseTrajectoryPoint goal_pt;
+    goal_pt = msg.posture;
       //generate the posture trajectory using dynamic gesture generation
-      pose_trajectory_controller::PoseTrajectory posture;
+      pose_trajectory_controller::PoseTrajectory posture = gesture_generator_.createMoveTrajectory(
+            current_state_, goal_pt);
       //check if generated posture is empty
 
       pose_trajectory_controller::FollowPoseTrajectoryGoal goal;
@@ -188,7 +300,12 @@ void RyanNeckController::motionCommandCB(const MotionCommand& msg)
     case MotionCommand::BOTH:
     {
       //generate the posture and gesture trajectories using dynamic gesture generation
-      pose_trajectory_controller::PoseTrajectory posture;
+      pose_trajectory_controller::PoseTrajectoryPoint goal_pt;
+      goal_pt = msg.posture;
+
+      pose_trajectory_controller::PoseTrajectory posture = gesture_generator_.createMoveTrajectory(
+            current_state_, goal_pt);
+
       pose_trajectory_controller::PoseTrajectory gesture = createGestureFromMsg(msg.gesture);
       //check if generated posture/gesture is empty
 
@@ -223,6 +340,11 @@ void RyanNeckController::motionCommandCB(const MotionCommand& msg)
       return;
   }
 }
+**/
+void RyanNeckController::neckStateCB(const pose_trajectory_controller::PoseTrajectoryControllerState& msg)
+{
+  current_state_ = msg.actual;
+}
 
 void RyanNeckController::publishMotionStatus()
 {
@@ -233,9 +355,9 @@ void RyanNeckController::publishMotionStatus()
 void RyanNeckController::trajControllerDoneCB(const actionlib::SimpleClientGoalState& state,
             const pose_trajectory_controller::FollowPoseTrajectoryResultConstPtr& result)
 {
-  current_trajectory_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
   current_gesture_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
   current_posture_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
+  current_trajectory_ptr_.reset(new pose_trajectory_controller::PoseTrajectory());
 
   status_msg_.status = MotionStatus::MOVE_COMPLETE;
 }

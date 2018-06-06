@@ -113,6 +113,7 @@ private:
 
 int main(int argc, char **argv)
 {
+  /*
   if(argc != 7)
   {
     ROS_ERROR("Usage is: \"name of gesture\", duration, intensity, rate, start_delay, invert");
@@ -141,6 +142,7 @@ int main(int argc, char **argv)
 
   ryan_gesture_generation::TestGesture test_client((argv[1])[0], gesture_inputs[0], gesture_inputs[1],
       gesture_inputs[2], gesture_inputs[3], gesture_inputs[4]);
+      */
 /*
   ryan_gesture_generation::RyanGestureGenerator ryanGestureGenerator(nh);
   pose_trajectory_controller::PoseTrajectory trajectory;
@@ -156,6 +158,30 @@ int main(int argc, char **argv)
   std::cout << ros::Time::now() << std::endl;
   std::cout << "Trajectory:\n" << trajectory << std::endl;
 */
+  ros::init(argc, argv, "dynamic_gesture_tester");
+  ros::NodeHandle nh;
+
+  ryan_gesture_generation::RyanGestureGenerator ryanGestureGenerator(nh);
+  pose_trajectory_controller::PoseTrajectory trajectory;
+
+  pose_trajectory_controller::PoseTrajectoryPoint start;
+  pose_trajectory_controller::PoseTrajectoryPoint end;
+
+  start.positions.resize(6);
+  end.positions.resize(6);
+
+  for (std::size_t i = 0; i < 6; ++i)
+  {
+    start.positions[i] = i;
+    end.positions[i] = 2*i;
+  }
+
+  start.time_from_start = ros::Duration(0.0);
+  end.time_from_start = ros::Duration(4.0);
+
+  trajectory = ryanGestureGenerator.createMoveTrajectory(start, end);
+
+  std::cout << "Trajectory:\n" << trajectory << std::endl;
 
   ROS_INFO_STREAM_NAMED("dynamic_gesture_tester", "Shutting down.");
   ros::shutdown();

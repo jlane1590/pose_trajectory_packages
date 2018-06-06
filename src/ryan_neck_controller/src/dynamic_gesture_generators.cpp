@@ -491,7 +491,7 @@ namespace internal
     return trajectory;
   }
 
-/*  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createMoveTrajectory(
+  pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createMoveTrajectory(
       pose_trajectory_controller::PoseTrajectoryPoint& start_pt, pose_trajectory_controller::PoseTrajectoryPoint& end_pt)
   {
     pose_trajectory_controller::PoseTrajectory trajectory;
@@ -515,9 +515,26 @@ namespace internal
       trajectory.points[1] = start_pt;
     }
 
+    //make sure the velocities are not empty and fill them with zeros
+    //make sure the accelerations are empty
+    //this will result in a cubic spline trajectory that stops at the end pt
+    trajectory.points[0].velocities.resize(axis_names_.size());
+    trajectory.points[1].velocities.resize(axis_names_.size());
+    trajectory.points[0].accelerations.resize(0);
+    trajectory.points[1].accelerations.resize(0);
+
+    for(std::size_t i=0; i<axis_names_.size(); ++i)
+    {
+      trajectory.points[0].velocities[i] = 0.0;
+      trajectory.points[1].velocities[i] = 0.0;
+    }
+
+    trajectory.axis_names = axis_names_;
+    trajectory.header.stamp = ros::Time::now();
+
     return trajectory;
   }
-*/
+
   pose_trajectory_controller::PoseTrajectory RyanGestureGenerator::createSurpriseTrajectory(
       double duration, double intensity, double rate, double start_delay, bool invert)
   {

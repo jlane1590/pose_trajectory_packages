@@ -39,6 +39,9 @@ public:
   pose_trajectory_controller::PoseTrajectory createShakeTrajectory(
       double duration, double intensity=1.0, double rate=1.0, double start_delay=0.0, bool invert=false);
 
+  pose_trajectory_controller::PoseTrajectory createMoveTrajectory(
+      pose_trajectory_controller::PoseTrajectoryPoint& start_pt, pose_trajectory_controller::PoseTrajectoryPoint& end_pt);
+
 private:
 
   ros::NodeHandle nh_;
