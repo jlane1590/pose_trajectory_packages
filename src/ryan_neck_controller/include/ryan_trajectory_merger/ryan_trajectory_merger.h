@@ -163,7 +163,7 @@ int createMergedTrajectory(pose_trajectory_controller::PoseTrajectory& merged,
   }
   sstr << std::endl;
 
-  ROS_INFO_STREAM(sstr.str());
+  ROS_DEBUG_STREAM(sstr.str());
 
   //ROS_INFO("wall time = %f \n traj start time = %f \n", ros::Time::now().toSec(), resultTrajectory.header.stamp.toSec());
 

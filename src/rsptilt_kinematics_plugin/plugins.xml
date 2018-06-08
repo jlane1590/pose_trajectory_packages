@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='ASCII'?>
+<library path="lib/librsptilt_kinematics_plugin">
+  <class type="rsptilt_kinematics::Kinematics"
+      base_class_type="kinematics_base::KinematicsPlugin">
+    <description>
+      kinematics plugin for the Rotary Stewart Platform.
+    </description>
+  </class>
+</library>

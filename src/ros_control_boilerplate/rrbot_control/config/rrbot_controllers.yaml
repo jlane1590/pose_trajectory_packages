@@ -1,0 +1,163 @@
+# ros_control_boilerplate Settings -----------------------
+# Settings for ros_control control loop
+generic_hw_control_loop:
+  loop_hz: 300
+  cycle_time_error_threshold: 0.01
+
+# Settings for ros_control hardware interface
+hardware_interface:
+   joints:
+      - rsp_joint_0
+      - rsp_joint_1
+      - rsp_joint_2
+      - rsp_joint_3
+      - rsp_joint_4
+      - rsp_joint_5
+      - rsp_joint_6
+   sim_control_mode: 0 # 0: position, 1: velocity
+
+joint_limits:
+  rsp_joint_0:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_1:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_2:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_3:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_4:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_5:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+  rsp_joint_6:
+    has_position_limits: true
+    min_position: -1.570796327
+    max_position: 1.570796327
+    has_velocity_limits: true
+    max_velocity: 6.544984695
+
+# Publish all joint states ----------------------------------
+# Creates the /joint_states topic necessary in ROS
+joint_state_controller:
+   type:         joint_state_controller/JointStateController
+   publish_rate: 50
+
+# Joint Trajectory Controller -------------------------------
+# For detailed explanations of parameter see http://wiki.ros.org/joint_trajectory_controller
+#position_trajectory_controller:
+neck_controller:
+   type: position_controllers/PoseTrajectoryController
+   action_topic: /neck_controller/follow_pose_trajectory
+   neck_state_topic: /neck_controller/state
+   # These joints can likely just be copied from the hardware_interface list above
+   joints:
+      - rsp_joint_0
+      - rsp_joint_1
+      - rsp_joint_2
+      - rsp_joint_3
+      - rsp_joint_4
+      - rsp_joint_5
+      - rsp_joint_6
+   axes:
+      - posX
+      - posY
+      - posZ
+      - roll
+      - pitch
+      - yaw
+   constraints:
+      goal_time: 2.0
+      #stopped_position_tolerance: 0.035 #0.4 # Defaults to 0.01
+      posX:
+          trajectory: 0.015 #0.60
+          goal:       0.005 #0.15
+      posY:
+          trajectory: 0.015 #0.60
+          goal:       0.005 #0.15
+      posZ:
+          trajectory: 0.015 #0.60
+          goal:       0.005 #0.15
+      roll:
+          trajectory: 0.09 #0.60
+          goal:       0.04 #0.15
+      pitch:
+          trajectory: 0.09 #0.60
+          goal:       0.04 #0.15
+      yaw:
+          trajectory: 0.09 #0.60
+          goal:       0.04 #0.15
+   # gains:
+   #     joint1: {p: 2.0,  i: 0.0, d: 0.01, i_clamp: 1}
+   #     joint2: {p: 2.0,  i: 0.0, d: 0.01, i_clamp: 1}
+
+    # state_publish_rate:  50 # Defaults to 50
+    # action_monitor_rate: 20 # Defaults to 20
+    #stop_trajectory_duration: 0 # Defaults to 0
+
+# Individual Position Controllers ---------------------------------------
+# Allows to send individual ROS msg of Float64 to each joint separately
+joint0_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_0
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint1_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_1
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint2_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_2
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint3_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_3
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint4_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_4
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint5_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_5
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+joint6_position_controller:
+   type: position_controllers/JointPositionController
+   joint: rsp_joint_6
+   pid: {p: 100.0, i: 0.01, d: 10.0}
+
+# Group Position Controllers ---------------------------------------
+# Allows to send single ROS msg of Float64MultiArray to all joints
+joint_position_controller:
+   type: position_controllers/JointGroupPositionController
+   joints:
+     - rsp_joint_0
+     - rsp_joint_1
+     - rsp_joint_2
+     - rsp_joint_3
+     - rsp_joint_4
+     - rsp_joint_5
+     - rsp_joint_6

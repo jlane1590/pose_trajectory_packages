@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include "ryan_neck_controller/UpdateMotion.h"
+#include "primitive_msgs/PoseTrajectoryPoint.h"
 
 int main(int argc, char **argv)
 {
@@ -12,18 +13,18 @@ int main(int argc, char **argv)
   ROS_INFO("Connected to Update Motion Service");
 
   //posture point to turn head left in one second
-  pose_trajectory_controller::PoseTrajectoryPoint posture_left;
+  primitive_msgs::PoseTrajectoryPoint posture_left;
   posture_left.positions.resize(6);
   posture_left.velocities.resize(6);
   posture_left.positions[5] = 1.05;
-  posture_left.time_from_start = ros::Duration(1.0);
+  posture_left.time_from_start = 1.0;
 
   //posture point to turn head right in four seconds
-  pose_trajectory_controller::PoseTrajectoryPoint posture_right;
+  primitive_msgs::PoseTrajectoryPoint posture_right;
   posture_right.positions.resize(6);
   posture_right.velocities.resize(6);
   posture_right.positions[5] = -1.05;
-  posture_right.time_from_start = ros::Duration(4.0);
+  posture_right.time_from_start = 4.0;
 
   //gesture command to nod for 2 seconds
   ryan_neck_controller::GestureCommand nod_gesture;

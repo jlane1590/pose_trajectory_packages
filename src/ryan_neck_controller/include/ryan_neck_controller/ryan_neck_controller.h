@@ -12,6 +12,7 @@
 #include <pose_trajectory_controller/FollowPoseTrajectoryAction.h>
 #include "pose_trajectory_controller/PoseTrajectory.h"
 #include "pose_trajectory_controller/PoseTrajectoryControllerState.h"
+#include "primitive_msgs/PoseTrajectoryPoint.h"
 
 // Boost
 #include <boost/shared_ptr.hpp>

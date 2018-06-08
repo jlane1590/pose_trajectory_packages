@@ -1,0 +1,182 @@
+<robot name="rsptilt">
+
+	<link name="base_link">
+		<visual>
+			<geometry>
+				<cylinder length="0.003" radius="0.073025"/>
+			</geometry>
+		</visual>
+	</link>
+
+	<link name="servo_arm_0">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+	<link name="servo_arm_1">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+	<link name="servo_arm_2">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+	<link name="servo_arm_3">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+	<link name="servo_arm_4">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+	<link name="servo_arm_5">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+<!--	<link name="servo_arm_6">
+		<visual>
+			<geometry>
+				<box size="0.03175 0.008 0.003"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.015875 0 0"/>
+		</visual>
+	</link>
+-->
+	<link name="platform_link">
+		<visual>
+			<geometry>
+				<cylinder length="0.003" radius="0.0508"/>
+			</geometry>
+			<origin rpy="0 1.5708 0" xyz="0 0 0"/>
+		</visual>
+	</link>
+<!--
+	<link name="passive_rod_0" />
+	<link name="passive_rod_1" />
+	<link name="passive_rod_2" />
+	<link name="passive_rod_3" />
+	<link name="passive_rod_4" />
+	<link name="passive_rod_5" />
+-->
+
+
+
+	<joint name="rsp_joint_0" type="revolute">
+		<parent link="base_link" />
+		<child link="servo_arm_0"/>
+		<origin xyz="0 0 0" rpy="0 -1.5708 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_1" type="revolute">
+		<parent link="servo_arm_0" />
+		<child link="servo_arm_1"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_2" type="revolute">
+		<parent link="servo_arm_1" />
+		<child link="servo_arm_2"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_3" type="revolute">
+		<parent link="servo_arm_2" />
+		<child link="servo_arm_3"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_4" type="revolute">
+		<parent link="servo_arm_3" />
+		<child link="servo_arm_4"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_5" type="revolute">
+		<parent link="servo_arm_4" />
+		<child link="servo_arm_5"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+	<joint name="rsp_joint_6" type="revolute">
+		<parent link="servo_arm_5" />
+		<child link="platform_link"/>
+		<origin xyz="0.03175 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+		<limit effort="30" velocity="6.9" lower="-1.5708" upper="1.5708" />
+	</joint>
+
+<!--
+	<joint name="passive_joint_0" type="floating">
+		<parent link="servo_arm_0" />
+		<child link="passive_rod_0"/>
+	</joint>
+
+	<joint name="passive_joint_1" type="floating">
+		<parent link="servo_arm_1" />
+		<child link="passive_rod_1"/>
+	</joint>
+
+	<joint name="passive_joint_2" type="floating">
+		<parent link="servo_arm_2" />
+		<child link="passive_rod_2"/>
+	</joint>
+
+	<joint name="passive_joint_3" type="floating">
+		<parent link="servo_arm_3" />
+		<child link="passive_rod_3"/>
+	</joint>
+
+	<joint name="passive_joint_4" type="floating">
+		<parent link="servo_arm_4" />
+		<child link="passive_rod_4"/>
+	</joint>
+
+	<joint name="passive_joint_5" type="floating">
+		<parent link="servo_arm_5" />
+		<child link="passive_rod_5"/>
+	</joint>
+
+	<joint name="platform_joint" type="floating">
+		<origin xyz="0 0 0.097968" rpy="0 0 0" />
+		<parent link="base_link" />
+		<child link="platform_link"/>
+	</joint>
+-->
+
+
+</robot>
