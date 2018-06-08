@@ -29,8 +29,8 @@ int main(int argc, char **argv)
   ryan_neck_controller::GestureCommand nod_gesture;
   nod_gesture.type = ryan_neck_controller::GestureCommand::NOD;
   nod_gesture.duration = 2.0;
-  nod_gesture.intensity = 0.5;
-  nod_gesture.rate = 0.5;
+  nod_gesture.intensity = 0.8;
+  nod_gesture.rate = 0.8;
   nod_gesture.delay = 0.0;
   nod_gesture.invert = false;
 
@@ -40,8 +40,10 @@ int main(int argc, char **argv)
   srv.request.desired_motion.type = ryan_neck_controller::MotionCommand::POSTURE;
   srv.request.desired_motion.merge = false;
   srv.request.desired_motion.posture = posture_left;
-  client.call(srv);
-  ROS_INFO("Left posture request sent");
+  if(client.call(srv))
+  {
+    ROS_INFO("Left posture request sent");
+  }
 
   //wait for 2 seconds
   ros::Duration(2.0).sleep();
@@ -50,8 +52,10 @@ int main(int argc, char **argv)
   srv.request.desired_motion.type = ryan_neck_controller::MotionCommand::POSTURE;
   srv.request.desired_motion.merge = false;
   srv.request.desired_motion.posture = posture_right;
-  client.call(srv);
-  ROS_INFO("Right posture request sent");
+  if(client.call(srv))
+  {
+    ROS_INFO("Right posture request sent");
+  }
 
   //wait for 1 second
   ros::Duration(1.0).sleep();
@@ -60,8 +64,10 @@ int main(int argc, char **argv)
   srv.request.desired_motion.type = ryan_neck_controller::MotionCommand::GESTURE;
   srv.request.desired_motion.merge = true;
   srv.request.desired_motion.gesture = nod_gesture;
-  client.call(srv);
-  ROS_INFO("Nod gesture request sent");
+  if(client.call(srv))
+  {
+    ROS_INFO("Nod gesture request sent");
+  }
 
   return 0;
 }

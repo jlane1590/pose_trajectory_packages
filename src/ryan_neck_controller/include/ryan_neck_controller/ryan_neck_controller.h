@@ -16,6 +16,9 @@
 // Boost
 #include <boost/shared_ptr.hpp>
 
+// realtime_tools
+//#include <realtime_tools/realtime_box.h>
+
 #include "ryan_neck_controller/UpdateMotion.h"
 #include "ryan_neck_controller/MotionStatus.h"
 
@@ -108,9 +111,12 @@ class RyanNeckController
 
   pose_trajectory_controller::PoseTrajectoryPoint current_state_;
 
-  pose_trajectory_controller::PoseTrajectoryPtr current_trajectory_ptr_;
-  pose_trajectory_controller::PoseTrajectoryPtr current_gesture_ptr_;
-  pose_trajectory_controller::PoseTrajectoryPtr current_posture_ptr_;
+  typedef boost::shared_ptr<pose_trajectory_controller::PoseTrajectory> TrajectoryPtr;
+  //typedef realtime_tools::RealtimeBox<TrajectoryPtr> TrajectoryBox;
+
+  //TrajectoryPtr current_trajectory_ptr_;
+  TrajectoryPtr current_gesture_ptr_;
+  TrajectoryPtr current_posture_ptr_;
 
 };
 
